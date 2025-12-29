@@ -1,0 +1,5 @@
+{
+  "name": "Neon Slither PWA",
+  "description": "A high-performance slither-like game with AI snakes, smooth neon graphics, and PWA support.",
+  "requestFramePermissions": []
+}
