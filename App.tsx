@@ -8,16 +8,24 @@ enum GameState {
   GAMEOVER
 }
 
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  isPlayer: boolean;
+}
+
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.START);
   const [isPaused, setIsPaused] = useState(false);
   const [score, setScore] = useState(0);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [playerName, setPlayerName] = useState('Player' + Math.floor(Math.random() * 1000));
 
   const startGame = () => {
     setGameState(GameState.PLAYING);
     setScore(0);
     setIsPaused(false);
+    setLeaderboard([]);
   };
 
   const togglePause = useCallback(() => {
@@ -66,33 +74,48 @@ const App: React.FC = () => {
             </button>
 
             <div className="border-t border-slate-700 pt-6">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 text-center">Controles e Itens</h3>
-              <div className="grid grid-cols-2 gap-4 text-[10px] text-slate-400 mb-6">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 text-center">Controles</h3>
+              <div className="grid grid-cols-2 gap-4 text-xs text-slate-400 mb-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold text-lg">🖱️</div>
-                  <span>Mover e Boost</span>
+                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold">🖱️</div>
+                  <span>Mouse para mover</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold text-lg">⌨️</div>
-                  <span>WASD / ESC</span>
+                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold">⌨️</div>
+                  <span>WASD ou Setas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold">⚡</div>
+                  <span>Espaço / Clique para Boost</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold">⏸️</div>
+                  <span>ESC para Pausar</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-slate-900/50 p-2 rounded-lg text-center border border-emerald-500/30">
-                  <div className="text-xl mb-1">🟢</div>
-                  <div className="font-bold text-emerald-400">+</div>
-                  <div className="text-[8px] uppercase">Dobra Tamanho</div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 text-center">Itens Especiais</h3>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-emerald-500/20">
+                  <div className="w-8 h-8 bg-emerald-500/20 rounded flex items-center justify-center text-emerald-400 font-bold text-lg">🟢</div>
+                  <div className="text-[10px] leading-tight">
+                    <span className="block font-bold text-emerald-400">ITEM +</span>
+                    Dobra o seu tamanho atual instantaneamente.
+                  </div>
                 </div>
-                <div className="bg-slate-900/50 p-2 rounded-lg text-center border border-amber-500/30">
-                  <div className="text-xl mb-1">🟠</div>
-                  <div className="font-bold text-amber-400">⚡</div>
-                  <div className="text-[8px] uppercase">Super Veloz</div>
+                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-amber-500/20">
+                  <div className="w-8 h-8 bg-amber-500/20 rounded flex items-center justify-center text-amber-400 font-bold text-lg">⚡</div>
+                  <div className="text-[10px] leading-tight">
+                    <span className="block font-bold text-amber-400">RAIO</span>
+                    Super velocidade por 30 segundos.
+                  </div>
                 </div>
-                <div className="bg-slate-900/50 p-2 rounded-lg text-center border border-blue-500/30">
-                  <div className="text-xl mb-1">🔵</div>
-                  <div className="font-bold text-blue-400">😇</div>
-                  <div className="text-[8px] uppercase">Invencível</div>
+                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-blue-500/20">
+                  <div className="w-8 h-8 bg-blue-500/20 rounded flex items-center justify-center text-blue-400 font-bold text-lg">😇</div>
+                  <div className="text-[10px] leading-tight">
+                    <span className="block font-bold text-blue-400">ANJINHO</span>
+                    Invencibilidade total por 15 segundos.
+                  </div>
                 </div>
               </div>
             </div>
@@ -103,18 +126,36 @@ const App: React.FC = () => {
       {/* JOGO ATIVO */}
       {gameState === GameState.PLAYING && (
         <>
-          <div className="absolute top-6 left-6 z-10 flex flex-col gap-2">
+          {/* OVERLAY SCORE & LEADERBOARD */}
+          <div className="absolute top-6 left-6 z-10 flex flex-col gap-2 pointer-events-none">
             <div className="bg-black/50 backdrop-blur-md border border-white/10 px-4 py-2 rounded-lg">
-              <span className="text-slate-400 text-xs uppercase tracking-widest font-bold">Pontuação</span>
-              <div className="text-2xl font-black tabular-nums tracking-tighter">{score}</div>
+              <span className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">Sua Pontuação</span>
+              <div className="text-3xl font-black tabular-nums tracking-tighter text-blue-400">{score}</div>
             </div>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">
-              Pressione ESC para pausar
+          </div>
+
+          <div className="absolute top-6 right-6 z-10 w-48 pointer-events-none">
+            <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-xl">
+              <div className="bg-white/5 px-3 py-1.5 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-300">
+                Top Ranking
+              </div>
+              <div className="p-2 flex flex-col gap-1">
+                {leaderboard.map((entry, i) => (
+                  <div 
+                    key={i} 
+                    className={`flex justify-between items-center px-2 py-1 rounded text-[11px] ${entry.isPlayer ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-slate-400'}`}
+                  >
+                    <span className="truncate max-w-[80px]">{i+1}. {entry.name}</span>
+                    <span className="tabular-nums font-mono opacity-80">{entry.score}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           
           <GameCanvas 
             onScoreUpdate={setScore} 
+            onLeaderboardUpdate={setLeaderboard}
             onGameOver={onGameOver}
             playerName={playerName}
             isPaused={isPaused}
@@ -123,7 +164,7 @@ const App: React.FC = () => {
           {/* MENU DE PAUSA */}
           {isPaused && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[100] animate-in fade-in zoom-in duration-200">
-              <div className="bg-slate-800 p-10 rounded-3xl border border-blue-500/30 shadow-2xl shadow-blue-500/10 text-center w-full max-w-sm">
+              <div className="bg-slate-800 p-10 rounded-3xl border border-blue-500/30 shadow-2xl shadow-blue-500/10 text-center w-full max-sm:mx-4 max-w-sm">
                 <h2 className="text-4xl font-black text-white mb-8 tracking-tighter">JOGO PAUSADO</h2>
                 <div className="flex flex-col gap-4">
                   <button 

@@ -36,7 +36,6 @@ export class GameEngine {
     for (let i = 0; i < AI_COUNT; i++) {
       this.spawnSnake(false);
     }
-    // Inicializar itens especiais
     this.initSpecialItems();
   }
 
@@ -50,25 +49,8 @@ export class GameEngine {
   }
 
   private spawnSpecialItem(type: SpecialItemType) {
-    let x = 0, y = 0;
-    let valid = false;
-    let attempts = 0;
-
-    while (!valid && attempts < 50) {
-      x = Math.random() * (WORLD_SIZE - 200) + 100;
-      y = Math.random() * (WORLD_SIZE - 200) + 100;
-      attempts++;
-
-      // Verificar proximidade de itens do mesmo tipo
-      const sameTypeNearby = this.state.specialItems.some(item => {
-        if (item.type !== type || !item.isAvailable) return false;
-        const distSq = (item.x - x) ** 2 + (item.y - y) ** 2;
-        return distSq < 400 * 400; // Raio de 400 unidades de distância mínima
-      });
-
-      if (!sameTypeNearby) valid = true;
-    }
-
+    let x = Math.random() * (WORLD_SIZE - 200) + 100;
+    let y = Math.random() * (WORLD_SIZE - 200) + 100;
     this.state.specialItems.push({
       id: Math.random().toString(36).substr(2, 9),
       x, y, type, isAvailable: true
@@ -77,6 +59,8 @@ export class GameEngine {
 
   public spawnPlayer(name: string) {
     const player = this.createSnake(name, true);
+    // Adiciona 2 segundos de proteção inicial para evitar mortes imediatas
+    player.invincibilityEndTime = performance.now() + 2000;
     this.state.player = player;
     this.state.snakes.push(player);
     this.state.isGameOver = false;
@@ -90,8 +74,8 @@ export class GameEngine {
   }
 
   private createSnake(name: string, isPlayer: boolean): Snake {
-    const x = Math.random() * (WORLD_SIZE - 200) + 100;
-    const y = Math.random() * (WORLD_SIZE - 200) + 100;
+    const x = Math.random() * (WORLD_SIZE - 400) + 200;
+    const y = Math.random() * (WORLD_SIZE - 400) + 200;
     const color = COLORS[Math.floor(Math.random() * COLORS.length)];
     const angle = Math.random() * Math.PI * 2;
     
@@ -102,18 +86,9 @@ export class GameEngine {
 
     return {
       id: Math.random().toString(36).substr(2, 9),
-      name,
-      color,
-      segments,
-      angle,
-      targetAngle: angle,
-      speed: BASE_SPEED,
-      length: INITIAL_SNAKE_LENGTH,
-      isPlayer,
-      score: 0,
-      isBoosting: false,
-      speedBoostEndTime: 0,
-      invincibilityEndTime: 0
+      name, color, segments, angle,
+      targetAngle: angle, speed: BASE_SPEED, length: INITIAL_SNAKE_LENGTH,
+      isPlayer, score: 0, isBoosting: false, speedBoostEndTime: 0, invincibilityEndTime: 0
     };
   }
 
@@ -134,8 +109,11 @@ export class GameEngine {
   }
 
   public update(now: number) {
-    if (!this.lastUpdate) this.lastUpdate = now;
-    const dt = (now - this.lastUpdate) / 16;
+    if (!this.lastUpdate) {
+      this.lastUpdate = now;
+      return;
+    }
+    const dt = Math.min(2.0, (now - this.lastUpdate) / 16.6);
     this.lastUpdate = now;
 
     this.updateSnakes(dt, now);
@@ -151,13 +129,11 @@ export class GameEngine {
       while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
       snake.angle += angleDiff * TURN_SPEED * dt;
 
-      // Calcular velocidade base considerando power-ups
       let currentBaseSpeed = BASE_SPEED;
       if (snake.speedBoostEndTime > now) {
         currentBaseSpeed *= SPECIAL_SPEED_MULTIPLIER;
       }
 
-      // Boosting logic (tecla espaço / clique)
       if (snake.isBoosting && snake.segments.length > 5) {
         snake.speed = currentBaseSpeed * (BOOST_SPEED / BASE_SPEED);
         if (Math.random() < 0.1) {
@@ -190,7 +166,6 @@ export class GameEngine {
     this.state.snakes.forEach(snake => {
       const head = snake.segments[0];
       
-      // 1. Snake vs Food
       this.state.foods = this.state.foods.filter(food => {
         const distSq = (head.x - food.x) ** 2 + (head.y - food.y) ** 2;
         if (distSq < (food.size + 15) ** 2) {
@@ -201,7 +176,6 @@ export class GameEngine {
         return true;
       });
 
-      // 2. Snake vs Special Items
       this.state.specialItems.forEach(item => {
         if (!item.isAvailable) return;
         const distSq = (head.x - item.x) ** 2 + (head.y - item.y) ** 2;
@@ -211,15 +185,13 @@ export class GameEngine {
       });
     });
 
-    // 3. Snake vs Snake
     const snakesToKill: Snake[] = [];
     this.state.snakes.forEach(attacker => {
-      // Se estiver invencível, não morre por colisão
       if (attacker.invincibilityEndTime > now) return;
 
       const head = attacker.segments[0];
       this.state.snakes.forEach(target => {
-        const startIdx = attacker.id === target.id ? 10 : 0;
+        const startIdx = attacker.id === target.id ? 12 : 0;
         for (let i = startIdx; i < target.segments.length; i++) {
           const seg = target.segments[i];
           const distSq = (head.x - seg.x) ** 2 + (head.y - seg.y) ** 2;
@@ -239,34 +211,19 @@ export class GameEngine {
     item.respawnAt = now + SPECIAL_ITEMS_CONFIG[item.type].respawnMs;
 
     switch (item.type) {
-      case 'SIZE':
-        snake.length *= 2;
-        snake.score += 500;
-        break;
-      case 'SPEED':
-        snake.speedBoostEndTime = now + SPECIAL_ITEMS_CONFIG.SPEED.durationMs;
-        break;
-      case 'ANGEL':
-        snake.invincibilityEndTime = now + SPECIAL_ITEMS_CONFIG.ANGEL.durationMs;
-        break;
+      case 'SIZE': snake.length *= 2; snake.score += 500; break;
+      case 'SPEED': snake.speedBoostEndTime = now + SPECIAL_ITEMS_CONFIG.SPEED.durationMs; break;
+      case 'ANGEL': snake.invincibilityEndTime = now + SPECIAL_ITEMS_CONFIG.ANGEL.durationMs; break;
     }
   }
 
   private killSnake(snake: Snake, now: number) {
-    // Verificação dupla de invencibilidade
     if (snake.invincibilityEndTime > now) return;
-
-    if (this.state.player?.id === snake.id) {
-      this.state.isGameOver = true;
-    }
+    if (this.state.player?.id === snake.id) this.state.isGameOver = true;
 
     snake.segments.forEach((seg, i) => {
       if (i % 3 === 0) {
-        this.state.foods.push(this.createFood(
-          seg.x + (Math.random() - 0.5) * 20, 
-          seg.y + (Math.random() - 0.5) * 20, 
-          2
-        ));
+        this.state.foods.push(this.createFood(seg.x + (Math.random()-0.5)*20, seg.y + (Math.random()-0.5)*20, 2));
       }
     });
 
@@ -276,7 +233,6 @@ export class GameEngine {
   private updateAI() {
     this.state.snakes.forEach(snake => {
       if (snake.isPlayer) return;
-
       const head = snake.segments[0];
       let obstacleDetected = false;
       for (const other of this.state.snakes) {
@@ -295,54 +251,30 @@ export class GameEngine {
       }
 
       if (!obstacleDetected && Math.random() < 0.05) {
-        let closestEntityPos: Point | null = null;
+        let closestPos: Point | null = null;
         let minDistSq = 400 * 400;
-        
-        // Priorizar itens especiais se estiverem perto
         this.state.specialItems.forEach(item => {
            if (!item.isAvailable) return;
-           const distSq = (head.x - item.x) ** 2 + (head.y - item.y) ** 2;
-           if (distSq < minDistSq) {
-             minDistSq = distSq;
-             closestEntityPos = { x: item.x, y: item.y };
-           }
+           const d = (head.x - item.x)**2 + (head.y - item.y)**2;
+           if (d < minDistSq) { minDistSq = d; closestPos = {x: item.x, y: item.y}; }
         });
-
-        if (!closestEntityPos) {
-          const scanLimit = 50;
-          for (let i = 0; i < Math.min(this.state.foods.length, scanLimit); i++) {
-            const food = this.state.foods[i];
-            const distSq = (head.x - food.x) ** 2 + (head.y - food.y) ** 2;
-            if (distSq < minDistSq) {
-              minDistSq = distSq;
-              closestEntityPos = { x: food.x, y: food.y };
-            }
+        if (!closestPos) {
+          for (let i = 0; i < Math.min(this.state.foods.length, 50); i++) {
+            const f = this.state.foods[i];
+            const d = (head.x - f.x)**2 + (head.y - f.y)**2;
+            if (d < minDistSq) { minDistSq = d; closestPos = {x: f.x, y: f.y}; }
           }
         }
-
-        if (closestEntityPos) {
-          snake.targetAngle = Math.atan2(closestEntityPos.y - head.y, closestEntityPos.x - head.x);
-        }
-      }
-
-      if (Math.random() < 0.01) {
-        snake.isBoosting = !snake.isBoosting;
+        if (closestPos) snake.targetAngle = Math.atan2(closestPos.y - head.y, closestPos.x - head.x);
       }
     });
   }
 
   private maintainEntities(now: number) {
-    if (this.state.foods.length < FOOD_COUNT) {
-      this.spawnFood(FOOD_COUNT - this.state.foods.length);
-    }
-    if (this.state.snakes.length < AI_COUNT + (this.state.player ? 1 : 0)) {
-      this.spawnSnake(false);
-    }
-    
-    // Gerenciar Respawn de itens especiais
+    if (this.state.foods.length < FOOD_COUNT) this.spawnFood(FOOD_COUNT - this.state.foods.length);
+    if (this.state.snakes.length < AI_COUNT + (this.state.player ? 1 : 0)) this.spawnSnake(false);
     this.state.specialItems.forEach(item => {
       if (!item.isAvailable && item.respawnAt && now >= item.respawnAt) {
-        // Remover item antigo e criar um novo em posição válida
         this.state.specialItems = this.state.specialItems.filter(i => i.id !== item.id);
         this.spawnSpecialItem(item.type);
       }

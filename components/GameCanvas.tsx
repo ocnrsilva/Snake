@@ -3,14 +3,21 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { GameEngine } from '../services/GameEngine';
 import { WORLD_SIZE, SPECIAL_ITEMS_CONFIG } from '../constants';
 
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  isPlayer: boolean;
+}
+
 interface GameCanvasProps {
   onScoreUpdate: (score: number) => void;
+  onLeaderboardUpdate: (leaders: LeaderboardEntry[]) => void;
   onGameOver: () => void;
   playerName: string;
   isPaused: boolean;
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onGameOver, playerName, isPaused }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpdate, onGameOver, playerName, isPaused }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine>(new GameEngine());
   const requestRef = useRef<number | undefined>(undefined);
@@ -62,6 +69,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onGameOver, play
       if (player) {
         onScoreUpdate(Math.floor(player.score));
       }
+
+      // Atualizar Leaderboard
+      const leaders = [...engine.state.snakes]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map(s => ({ name: s.name, score: Math.floor(s.score), isPlayer: s.isPlayer }));
+      onLeaderboardUpdate(leaders);
       
       if (engine.state.isGameOver) {
         onGameOver();
@@ -167,13 +181,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onGameOver, play
         const bodyWidth = 20 + Math.min(60, snake.length * 0.15);
         ctx.lineWidth = bodyWidth;
         
-        // Efeitos visuais por estado
         if (isInvincible) {
           ctx.shadowBlur = 25;
-          ctx.shadowColor = '#60a5fa'; // Aura anjinho
+          ctx.shadowColor = '#60a5fa'; 
         } else if (isFast) {
           ctx.shadowBlur = 15;
-          ctx.shadowColor = '#f59e0b'; // Aura raio
+          ctx.shadowColor = '#f59e0b'; 
         } else {
           ctx.shadowBlur = 15;
           ctx.shadowColor = snake.color;
@@ -194,7 +207,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onGameOver, play
         ctx.strokeStyle = gradient;
         ctx.stroke();
 
-        // Nome e ícones de status
         ctx.shadowBlur = 0;
         ctx.fillStyle = 'white';
         ctx.font = 'bold 16px sans-serif';
@@ -215,7 +227,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onGameOver, play
       ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
       ctx.strokeRect(mmX, mmY, mmSize, mmSize);
       
-      // Desenhar itens especiais no mapa
       engineRef.current.state.specialItems.forEach(item => {
         if (!item.isAvailable) return;
         const sx = mmX + (item.x / worldSize) * mmSize;
@@ -241,7 +252,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onGameOver, play
       window.removeEventListener('keyup', handleKeyUp);
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [resize, playerName, onScoreUpdate, onGameOver, isPaused]);
+  }, [resize, playerName, onScoreUpdate, onLeaderboardUpdate, onGameOver, isPaused]);
 
   const handleInput = (clientX: number, clientY: number) => {
     if (isPaused) return;
