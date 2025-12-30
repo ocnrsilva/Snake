@@ -4,7 +4,24 @@ export interface Point {
   y: number;
 }
 
-export type SpecialItemType = 'SIZE' | 'SPEED' | 'ANGEL';
+export interface TrailParticle {
+  x: number;
+  y: number;
+  color: string;
+  life: number; // 1.0 (novo) até 0.0 (sumindo)
+  size: number;
+}
+
+export type SpecialItemType = 'SIZE' | 'SPEED' | 'ANGEL' | 'MAGNET' | 'SCOUTER' | 'SLICER';
+
+export interface Knife {
+  id: string;
+  x: number;
+  y: number;
+  angle: number;
+  ownerId: string;
+  speed: number;
+}
 
 export interface SpecialItem {
   id: string;
@@ -30,6 +47,10 @@ export interface Snake {
   // Timestamps de expiração (ms)
   speedBoostEndTime: number;
   invincibilityEndTime: number;
+  magnetEndTime: number;
+  scouterEndTime: number;
+  slicerEndTime: number;
+  lastKnifeTime: number;
 }
 
 export interface Food {
@@ -45,6 +66,8 @@ export interface GameState {
   snakes: Snake[];
   foods: Food[];
   specialItems: SpecialItem[];
+  trails: TrailParticle[];
+  knives: Knife[];
   worldSize: number;
   isGameOver: boolean;
 }

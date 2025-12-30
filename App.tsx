@@ -100,14 +100,14 @@ const App: React.FC = () => {
                   <div className="w-8 h-8 bg-emerald-500/20 rounded flex items-center justify-center text-emerald-400 font-bold text-lg">🟢</div>
                   <div className="text-[10px] leading-tight">
                     <span className="block font-bold text-emerald-400">ITEM +</span>
-                    Dobra o seu tamanho atual instantaneamente.
+                    Dobra o tamanho instantaneamente + 500 pontos.
                   </div>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-amber-500/20">
                   <div className="w-8 h-8 bg-amber-500/20 rounded flex items-center justify-center text-amber-400 font-bold text-lg">⚡</div>
                   <div className="text-[10px] leading-tight">
                     <span className="block font-bold text-amber-400">RAIO</span>
-                    Super velocidade por 30 segundos.
+                    Velocidade 1.8x por 30 segundos.
                   </div>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-blue-500/20">
@@ -115,6 +115,27 @@ const App: React.FC = () => {
                   <div className="text-[10px] leading-tight">
                     <span className="block font-bold text-blue-400">ANJINHO</span>
                     Invencibilidade total por 15 segundos.
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-rose-500/20">
+                  <div className="w-8 h-8 bg-rose-500/20 rounded flex items-center justify-center text-rose-400 font-bold text-lg">🧲</div>
+                  <div className="text-[10px] leading-tight">
+                    <span className="block font-bold text-rose-400">ÍMÃ</span>
+                    Atrai comida (raio 250px) por 15 segundos.
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-purple-500/20">
+                  <div className="w-8 h-8 bg-purple-500/20 rounded flex items-center justify-center text-purple-400 font-bold text-lg">🔍</div>
+                  <div className="text-[10px] leading-tight">
+                    <span className="block font-bold text-purple-400">LUPA</span>
+                    Revela itens no minimapa por 10 segundos.
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-slate-400/20">
+                  <div className="w-8 h-8 bg-slate-400/20 rounded flex items-center justify-center text-slate-300 font-bold text-lg">⚔️</div>
+                  <div className="text-[10px] leading-tight">
+                    <span className="block font-bold text-slate-300">FATIADOR</span>
+                    Lança facas a cada 2s por 15s. Divide alvos ao meio!
                   </div>
                 </div>
               </div>
