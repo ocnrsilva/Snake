@@ -1,6 +1,10 @@
 
 export interface Point {
   x: number;
+}
+
+export interface Point {
+  x: number;
   y: number;
 }
 
@@ -8,11 +12,11 @@ export interface TrailParticle {
   x: number;
   y: number;
   color: string;
-  life: number; // 1.0 (novo) até 0.0 (sumindo)
+  life: number;
   size: number;
 }
 
-export type SpecialItemType = 'SIZE' | 'SPEED' | 'ANGEL' | 'MAGNET' | 'SCOUTER' | 'SLICER';
+export type SpecialItemType = 'SIZE' | 'SPEED' | 'ANGEL' | 'MAGNET' | 'SCOUTER' | 'SLICER' | 'USURPER' | 'STALKER';
 
 export interface Knife {
   id: string;
@@ -21,6 +25,7 @@ export interface Knife {
   angle: number;
   ownerId: string;
   speed: number;
+  distanceTravelled: number;
 }
 
 export interface SpecialItem {
@@ -44,12 +49,16 @@ export interface Snake {
   isPlayer: boolean;
   score: number;
   isBoosting: boolean;
+  // Inventário de itens (quantidades acumuladas)
+  powerupInventory: Record<SpecialItemType, number>;
   // Timestamps de expiração (ms)
   speedBoostEndTime: number;
   invincibilityEndTime: number;
   magnetEndTime: number;
   scouterEndTime: number;
   slicerEndTime: number;
+  usurperEndTime: number;
+  stalkerEndTime: number;
   lastKnifeTime: number;
 }
 

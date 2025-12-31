@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import GameCanvas from './components/GameCanvas';
+import { SpecialItemType } from './types';
 
 enum GameState {
   START,
@@ -17,16 +18,50 @@ interface LeaderboardEntry {
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.START);
   const [isPaused, setIsPaused] = useState(false);
-  const [score, setScore] = useState(0);
+  const [targetScore, setTargetScore] = useState(0);
+  const [displayScore, setDisplayScore] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [playerName, setPlayerName] = useState('Player' + Math.floor(Math.random() * 1000));
+  
+  // Estado para controlar qual item está sendo inspecionado (hover/touch)
+  const [focusedItem, setFocusedItem] = useState<number | null>(null);
+
+  const [enabledItems, setEnabledItems] = useState<Record<SpecialItemType, boolean>>({
+    SIZE: true,
+    SPEED: true,
+    MAGNET: true,
+    SCOUTER: true,
+    ANGEL: false,
+    SLICER: false,
+    USURPER: false,
+    STALKER: false,
+  });
 
   const startGame = () => {
     setGameState(GameState.PLAYING);
-    setScore(0);
+    setTargetScore(0);
+    setDisplayScore(0);
     setIsPaused(false);
     setLeaderboard([]);
   };
+
+  const toggleItem = (type: SpecialItemType) => {
+    setEnabledItems(prev => ({
+      ...prev,
+      [type]: !prev[type]
+    }));
+  };
+
+  useEffect(() => {
+    if (displayScore < targetScore) {
+      const diff = targetScore - displayScore;
+      const step = Math.max(1, Math.floor(diff / 10));
+      const timer = setTimeout(() => {
+        setDisplayScore(prev => Math.min(targetScore, prev + step));
+      }, 20);
+      return () => clearTimeout(timer);
+    }
+  }, [displayScore, targetScore]);
 
   const togglePause = useCallback(() => {
     if (gameState === GameState.PLAYING) {
@@ -48,125 +83,202 @@ const App: React.FC = () => {
     setGameState(GameState.GAMEOVER);
   }, []);
 
-  return (
-    <div className="relative w-full h-full text-white font-sans">
-      {/* TELA INICIAL */}
-      {gameState === GameState.START && (
-        <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center z-50 p-6 overflow-y-auto">
-          <h1 className="text-6xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-            NEON SLITHER
-          </h1>
-          
-          <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 w-full max-w-md shadow-2xl">
-            <label className="block text-sm font-medium text-slate-400 mb-2">Seu Nome</label>
-            <input 
-              type="text" 
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 mb-6 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-            />
-            
-            <button 
-              onClick={startGame}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/20 transform active:scale-95 transition-all mb-8"
-            >
-              JOGAR AGORA
-            </button>
+  const availablePowers = [
+    { 
+      type: 'SIZE' as SpecialItemType, 
+      icon: '🟢', label: 'Item +', color: 'emerald', 
+      desc: 'Dobra tamanho + 500pts',
+      details: 'Aumenta drasticamente sua massa atual em 100% e concede um bônus de pontuação imediato. Ideal para dominar o centro do mapa através da intimidação visual.'
+    },
+    { 
+      type: 'SPEED' as SpecialItemType, 
+      icon: '⚡', label: 'Raio', color: 'amber', 
+      desc: 'Velocidade 1.8x (30s)',
+      details: 'Concede um aumento massivo na velocidade base. Diferente do turbo comum, este efeito não consome sua massa enquanto ativo. Use para perseguir alvos rápidos.'
+    },
+    { 
+      type: 'MAGNET' as SpecialItemType, 
+      icon: '🧲', label: 'Ímã', color: 'rose', 
+      desc: 'Atrai comida 250px (15s)',
+      details: 'Gera um campo eletromagnético poderoso que puxa todas as partículas de comida próximas para sua cabeça. Perfeito para crescer rápido após a morte de uma cobra grande.'
+    },
+    { 
+      type: 'SCOUTER' as SpecialItemType, 
+      icon: '🔍', label: 'Lupa', color: 'purple', 
+      desc: 'Ver itens no minimapa (40s)',
+      details: 'Hackeia os sistemas do Grid para revelar a localização exata de todos os itens especiais ativos no minimapa. Use para planejar sua rota de evolução.'
+    },
+    { 
+      type: 'ANGEL' as SpecialItemType, 
+      icon: '🛡️', label: 'Anjinho', color: 'blue', 
+      desc: 'Invencibilidade (15s)',
+      details: 'Cria um escudo de luz que impede colisões fatais contra corpos de outras cobras. Atenção: Você ainda pode morrer se sair dos limites do mapa!'
+    },
+    { 
+      type: 'SLICER' as SpecialItemType, 
+      icon: '⚔️', label: 'Fatiador', color: 'slate', 
+      desc: 'Lança facas e rouba pontos',
+      details: 'Equipa sua cauda com lâminas de energia que disparam facas automaticamente contra oponentes próximos, fatiando-os e transformando parte do corpo deles em comida.'
+    },
+    { 
+      type: 'USURPER' as SpecialItemType, 
+      icon: '🎭', label: 'Usurpador', color: 'cyan', 
+      desc: 'Rouba stats do alvo (30s)',
+      details: 'Ao tocar na lateral de qualquer cobra inimiga, você instantaneamente rouba a pontuação, o comprimento e a cor dela, deixando-a enfraquecida.'
+    },
+    { 
+      type: 'STALKER' as SpecialItemType, 
+      icon: '👁️', label: 'Stalker', color: 'red', 
+      desc: 'Caçador com mira laser (25s)',
+      details: 'Ativa um sistema de rastreamento avançado com mira laser. Elimina o oponente alvo para roubar instantaneamente todos os seus atributos, comprimento e pontuação total.'
+    },
+  ];
 
-            <div className="border-t border-slate-700 pt-6">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 text-center">Controles</h3>
-              <div className="grid grid-cols-2 gap-4 text-xs text-slate-400 mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold">🖱️</div>
-                  <span>Mouse para mover</span>
+  return (
+    <div className="relative w-full h-full text-white font-sans bg-slate-950 overflow-hidden">
+      {gameState === GameState.START && (
+        <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-sm flex flex-col items-center z-50 overflow-hidden">
+          <div className="w-full py-6 md:py-10 text-center shrink-0">
+            <h1 className="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400 drop-shadow-2xl animate-pulse">
+              NEON SLITHER
+            </h1>
+            <p className="text-slate-400 text-xs md:text-sm font-bold tracking-[0.3em] uppercase mt-2">v1.6 Info Peek Edition</p>
+          </div>
+          
+          <div className="w-full max-w-2xl flex-1 overflow-y-auto px-4 pb-10 flex flex-col items-center gap-6 no-scrollbar">
+            <div className="bg-slate-800/80 p-6 md:p-8 rounded-3xl border border-slate-700 w-full shadow-2xl backdrop-blur-md">
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Codinome</label>
+                  <input 
+                    type="text" 
+                    maxLength={15}
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl p-4 text-lg font-bold text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all placeholder-slate-600"
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold">⌨️</div>
-                  <span>WASD ou Setas</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold">⚡</div>
-                  <span>Espaço / Clique para Boost</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-white font-bold">⏸️</div>
-                  <span>ESC para Pausar</span>
-                </div>
+                <button 
+                  onClick={startGame}
+                  className="bg-gradient-to-br from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white font-black px-10 py-4 rounded-2xl shadow-lg shadow-blue-500/20 transform active:scale-95 transition-all text-xl"
+                >
+                  JOGAR
+                </button>
               </div>
 
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 text-center">Itens Especiais</h3>
-              <div className="grid grid-cols-1 gap-3">
-                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-emerald-500/20">
-                  <div className="w-8 h-8 bg-emerald-500/20 rounded flex items-center justify-center text-emerald-400 font-bold text-lg">🟢</div>
-                  <div className="text-[10px] leading-tight">
-                    <span className="block font-bold text-emerald-400">ITEM +</span>
-                    Dobra o tamanho instantaneamente + 500 pontos.
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                <div className="flex items-center gap-3 p-3 bg-slate-900/40 rounded-xl border border-slate-700/50">
+                  <span className="text-xl">🖱️</span>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] text-slate-500 uppercase font-black">Direção</span>
+                    <span className="text-[11px] font-bold">Mouse / Toque</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-amber-500/20">
-                  <div className="w-8 h-8 bg-amber-500/20 rounded flex items-center justify-center text-amber-400 font-bold text-lg">⚡</div>
-                  <div className="text-[10px] leading-tight">
-                    <span className="block font-bold text-amber-400">RAIO</span>
-                    Velocidade 1.8x por 30 segundos.
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-blue-500/20">
-                  <div className="w-8 h-8 bg-blue-500/20 rounded flex items-center justify-center text-blue-400 font-bold text-lg">😇</div>
-                  <div className="text-[10px] leading-tight">
-                    <span className="block font-bold text-blue-400">ANJINHO</span>
-                    Invencibilidade total por 15 segundos.
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-rose-500/20">
-                  <div className="w-8 h-8 bg-rose-500/20 rounded flex items-center justify-center text-rose-400 font-bold text-lg">🧲</div>
-                  <div className="text-[10px] leading-tight">
-                    <span className="block font-bold text-rose-400">ÍMÃ</span>
-                    Atrai comida (raio 250px) por 15 segundos.
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-purple-500/20">
-                  <div className="w-8 h-8 bg-purple-500/20 rounded flex items-center justify-center text-purple-400 font-bold text-lg">🔍</div>
-                  <div className="text-[10px] leading-tight">
-                    <span className="block font-bold text-purple-400">LUPA</span>
-                    Revela itens no minimapa por 10 segundos.
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-slate-900/40 p-2 rounded-lg border border-slate-400/20">
-                  <div className="w-8 h-8 bg-slate-400/20 rounded flex items-center justify-center text-slate-300 font-bold text-lg">⚔️</div>
-                  <div className="text-[10px] leading-tight">
-                    <span className="block font-bold text-slate-300">FATIADOR</span>
-                    Lança facas a cada 2s por 15s. Divide alvos ao meio!
+                <div className="flex items-center gap-3 p-3 bg-slate-900/40 rounded-xl border border-slate-700/50">
+                  <span className="text-xl">⚡</span>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] text-slate-500 uppercase font-black">Turbo</span>
+                    <span className="text-[11px] font-bold">Espaço / Clique</span>
                   </div>
                 </div>
               </div>
             </div>
+
+            <div className="w-full">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-px flex-1 bg-slate-800"></div>
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Configurar Mapa</h3>
+                <div className="h-px flex-1 bg-slate-800"></div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {availablePowers.map((item, i) => (
+                  <div 
+                    key={i} 
+                    onMouseEnter={() => setFocusedItem(i)}
+                    onMouseLeave={() => setFocusedItem(null)}
+                    onTouchStart={(e) => { e.stopPropagation(); setFocusedItem(i); }}
+                    onTouchEnd={() => setFocusedItem(null)}
+                    className={`relative flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer group select-none ${
+                      enabledItems[item.type] 
+                      ? 'bg-slate-800/80 border-slate-500/50 shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
+                      : 'bg-slate-900/40 border-slate-800 opacity-60'
+                    }`}
+                  >
+                    {/* INFO TOOLTIP OVERLAY */}
+                    {focusedItem === i && (
+                      <div className={`absolute bottom-full left-0 right-0 mb-4 z-[60] p-4 rounded-2xl border bg-slate-900/95 backdrop-blur-xl shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200 border-${item.color}-500/50`}>
+                        <div className="flex items-center gap-2 mb-2">
+                           <span className="text-xl">{item.icon}</span>
+                           <span className={`text-xs font-black uppercase tracking-widest text-${item.color}-400`}>{item.label} - Info</span>
+                        </div>
+                        <p className="text-[11px] text-slate-200 leading-relaxed font-medium">
+                          {item.details}
+                        </p>
+                        {/* Triângulo do Tooltip */}
+                        <div className="absolute top-full left-10 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-slate-900/95"></div>
+                      </div>
+                    )}
+
+                    <div 
+                      onClick={(e) => { e.stopPropagation(); toggleItem(item.type); }}
+                      className="w-10 h-10 shrink-0 bg-slate-900 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform shadow-inner"
+                    >
+                      {item.icon}
+                    </div>
+                    <div className="flex-1" onClick={() => toggleItem(item.type)}>
+                      <span className="block text-[11px] font-black uppercase text-white leading-tight">{item.label}</span>
+                      <p className="text-[10px] text-slate-400 leading-tight mt-0.5">{item.desc}</p>
+                    </div>
+                    {/* Custom Checkbox */}
+                    <div 
+                      onClick={(e) => { e.stopPropagation(); toggleItem(item.type); }}
+                      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all mt-1 ${
+                      enabledItems[item.type] 
+                      ? `border-${item.color}-500 bg-${item.color}-500` 
+                      : 'border-slate-700 bg-transparent'
+                    }`}>
+                      {enabledItems[item.type] && (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-[9px] text-slate-600 font-medium text-center max-w-xs mt-4 italic">
+              DICA: Pressione e segure em um item para ver detalhes.
+            </p>
           </div>
         </div>
       )}
 
-      {/* JOGO ATIVO */}
       {gameState === GameState.PLAYING && (
         <>
-          {/* OVERLAY SCORE & LEADERBOARD */}
-          <div className="absolute top-6 left-6 z-10 flex flex-col gap-2 pointer-events-none">
-            <div className="bg-black/50 backdrop-blur-md border border-white/10 px-4 py-2 rounded-lg">
-              <span className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">Sua Pontuação</span>
-              <div className="text-3xl font-black tabular-nums tracking-tighter text-blue-400">{score}</div>
+          <div className="absolute top-4 left-4 z-10 pointer-events-none">
+            <div className="bg-slate-900/80 backdrop-blur-lg border border-white/10 px-4 py-2 rounded-2xl shadow-2xl">
+              <span className="block text-[8px] md:text-[10px] uppercase tracking-widest font-black text-slate-500">Score</span>
+              <div className="text-2xl md:text-4xl font-black tabular-nums tracking-tighter text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+                {displayScore}
+              </div>
             </div>
           </div>
 
-          <div className="absolute top-6 right-6 z-10 w-48 pointer-events-none">
-            <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-xl">
-              <div className="bg-white/5 px-3 py-1.5 border-b border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-300">
-                Top Ranking
+          <div className="absolute top-4 right-4 z-10 w-36 md:w-52 pointer-events-none">
+            <div className="bg-slate-900/80 backdrop-blur-lg border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="bg-white/5 px-3 py-1.5 border-b border-white/10 text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">
+                Top 5 Global
               </div>
               <div className="p-2 flex flex-col gap-1">
                 {leaderboard.map((entry, i) => (
                   <div 
                     key={i} 
-                    className={`flex justify-between items-center px-2 py-1 rounded text-[11px] ${entry.isPlayer ? 'bg-blue-500/20 text-blue-400 font-bold' : 'text-slate-400'}`}
+                    className={`flex justify-between items-center px-2 py-1 rounded-lg text-[10px] md:text-[11px] transition-colors ${entry.isPlayer ? 'bg-blue-500 text-white font-bold' : 'text-slate-400'}`}
                   >
-                    <span className="truncate max-w-[80px]">{i+1}. {entry.name}</span>
+                    <span className="truncate max-w-[60px] md:max-w-[100px]">{i+1}. {entry.name}</span>
                     <span className="tabular-nums font-mono opacity-80">{entry.score}</span>
                   </div>
                 ))}
@@ -175,31 +287,24 @@ const App: React.FC = () => {
           </div>
           
           <GameCanvas 
-            onScoreUpdate={setScore} 
+            onScoreUpdate={setTargetScore} 
             onLeaderboardUpdate={setLeaderboard}
             onGameOver={onGameOver}
             playerName={playerName}
             isPaused={isPaused}
+            enabledItems={enabledItems}
           />
 
-          {/* MENU DE PAUSA */}
           {isPaused && (
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[100] animate-in fade-in zoom-in duration-200">
-              <div className="bg-slate-800 p-10 rounded-3xl border border-blue-500/30 shadow-2xl shadow-blue-500/10 text-center w-full max-sm:mx-4 max-w-sm">
-                <h2 className="text-4xl font-black text-white mb-8 tracking-tighter">JOGO PAUSADO</h2>
+            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl flex items-center justify-center z-[100] animate-in fade-in zoom-in duration-200">
+              <div className="bg-slate-800 p-8 md:p-12 rounded-[2.5rem] border border-blue-500/30 shadow-2xl shadow-blue-500/10 text-center w-full max-w-sm mx-4">
+                <div className="w-16 h-16 bg-blue-500/20 rounded-3xl mx-auto mb-6 flex items-center justify-center border border-blue-500/30">
+                  <span className="text-3xl">⏸️</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black text-white mb-8 tracking-tighter">PAUSADO</h2>
                 <div className="flex flex-col gap-4">
-                  <button 
-                    onClick={() => setIsPaused(false)}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-all transform active:scale-95"
-                  >
-                    CONTINUAR
-                  </button>
-                  <button 
-                    onClick={() => setGameState(GameState.START)}
-                    className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-xl transition-all transform active:scale-95"
-                  >
-                    SAIR PARA O MENU
-                  </button>
+                  <button onClick={() => setIsPaused(false)} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/30 active:scale-95">CONTINUAR</button>
+                  <button onClick={() => setGameState(GameState.START)} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-2xl transition-all active:scale-95">MENU PRINCIPAL</button>
                 </div>
               </div>
             </div>
@@ -207,20 +312,22 @@ const App: React.FC = () => {
         </>
       )}
 
-      {/* FIM DE JOGO */}
       {gameState === GameState.GAMEOVER && (
-        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 p-6 animate-in fade-in duration-500">
-          <div className="text-center">
-            <div className="w-20 h-20 bg-red-500 rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg shadow-red-500/30">
+        <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-lg flex flex-col items-center justify-center z-50 p-6 animate-in fade-in zoom-in duration-500">
+          <div className="bg-slate-800 p-10 rounded-[3rem] border border-red-500/30 shadow-2xl text-center max-w-md w-full">
+            <div className="w-20 h-20 bg-red-500 rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg shadow-red-500/30 animate-bounce">
               <span className="text-4xl font-bold">💀</span>
             </div>
-            <h2 className="text-5xl font-black text-red-500 mb-2 tracking-tighter uppercase">Fim de Jogo</h2>
-            <p className="text-slate-400 text-xl mb-8 font-medium">Sua pontuação final: <span className="text-white font-bold">{score}</span></p>
+            <h2 className="text-4xl md:text-5xl font-black text-red-500 mb-2 tracking-tighter uppercase">VOCÊ MORREU</h2>
+            <div className="mb-8">
+               <span className="text-slate-500 text-xs uppercase font-black tracking-widest">Score Final</span>
+               <p className="text-5xl font-black text-white">{targetScore}</p>
+            </div>
             <button 
               onClick={() => setGameState(GameState.START)}
-              className="bg-white text-black font-black py-4 px-12 rounded-full hover:bg-slate-200 transition-all shadow-xl transform hover:scale-105 active:scale-95"
+              className="w-full bg-white text-black font-black py-5 px-12 rounded-2xl hover:bg-slate-200 transition-all shadow-xl active:scale-95 text-lg"
             >
-              TENTAR NOVAMENTE
+              VOLTAR AO MENU
             </button>
           </div>
         </div>

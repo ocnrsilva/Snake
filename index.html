@@ -15,13 +15,22 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #0f172a;
+            background-color: #020617;
             touch-action: none;
             user-select: none;
+            height: 100%;
         }
         #root {
             width: 100vw;
             height: 100vh;
+        }
+        /* Custom scrollbar para a tela inicial */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 <script type="importmap">
