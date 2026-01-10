@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import GameCanvas from './components/GameCanvas';
+import GameCanvas, { ActivePowerup } from './components/GameCanvas';
 import { SpecialItemType } from './types';
 
 enum GameState {
@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [targetScore, setTargetScore] = useState(0);
   const [displayScore, setDisplayScore] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [activePowerups, setActivePowerups] = useState<ActivePowerup[]>([]);
   const [playerName, setPlayerName] = useState('Player' + Math.floor(Math.random() * 1000));
   
   // Estado para controlar qual item está sendo inspecionado (hover/touch)
@@ -43,6 +44,7 @@ const App: React.FC = () => {
     setDisplayScore(0);
     setIsPaused(false);
     setLeaderboard([]);
+    setActivePowerups([]);
   };
 
   const toggleItem = (type: SpecialItemType) => {
@@ -258,12 +260,27 @@ const App: React.FC = () => {
 
       {gameState === GameState.PLAYING && (
         <>
-          <div className="absolute top-4 left-4 z-10 pointer-events-none">
+          <div className="absolute top-4 left-4 z-10 pointer-events-none flex flex-col gap-2">
             <div className="bg-slate-900/80 backdrop-blur-lg border border-white/10 px-4 py-2 rounded-2xl shadow-2xl">
               <span className="block text-[8px] md:text-[10px] uppercase tracking-widest font-black text-slate-500">Score</span>
               <div className="text-2xl md:text-4xl font-black tabular-nums tracking-tighter text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
                 {displayScore}
               </div>
+            </div>
+
+            {/* Timers de Powerups Ativos */}
+            <div className="flex flex-col gap-1.5 w-max">
+              {activePowerups.map((pw) => (
+                <div key={pw.type} className="bg-slate-900/80 backdrop-blur-md border border-white/10 pr-6 pl-1.5 py-1 rounded-full shadow-xl flex items-center gap-2.5 animate-in slide-in-from-left duration-300">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg bg-slate-800 shadow-[0_0_15px_rgba(255,255,255,0.15)] ring-1 ring-white/20`}>
+                    {pw.icon}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 leading-none mb-0.5">{pw.label}</span>
+                    <span className="text-[14px] font-black tabular-nums text-white leading-none">{pw.timeLeft}s</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -289,6 +306,7 @@ const App: React.FC = () => {
           <GameCanvas 
             onScoreUpdate={setTargetScore} 
             onLeaderboardUpdate={setLeaderboard}
+            onPowerupsUpdate={setActivePowerups}
             onGameOver={onGameOver}
             playerName={playerName}
             isPaused={isPaused}

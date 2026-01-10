@@ -66,14 +66,14 @@ export const SPECIAL_ITEMS_CONFIG = {
     max: 8,
     respawnMs: 1 * 60 * 1000,
     durationMs: 30 * 1000,
-    label: 'MASK', 
+    label: '🎭', 
     color: '#22d3ee' 
   },
   STALKER: {
     max: 6,
     respawnMs: 3 * 60 * 1000,
     durationMs: 25 * 1000,
-    label: 'EYE',
+    label: '👁️',
     color: '#f87171'
   }
 };

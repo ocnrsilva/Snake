@@ -10,16 +10,25 @@ interface LeaderboardEntry {
   isPlayer: boolean;
 }
 
+export interface ActivePowerup {
+  type: SpecialItemType;
+  timeLeft: number;
+  label: string;
+  icon: string;
+  color: string;
+}
+
 interface GameCanvasProps {
   onScoreUpdate: (score: number) => void;
   onLeaderboardUpdate: (leaders: LeaderboardEntry[]) => void;
+  onPowerupsUpdate?: (powerups: ActivePowerup[]) => void;
   onGameOver: () => void;
   playerName: string;
   isPaused: boolean;
   enabledItems: Record<SpecialItemType, boolean>;
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpdate, onGameOver, playerName, isPaused, enabledItems }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpdate, onPowerupsUpdate, onGameOver, playerName, isPaused, enabledItems }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const requestRef = useRef<number | undefined>(undefined);
@@ -56,7 +65,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
 
     resize();
     
-    // Inicializa o motor com os itens configurados
     const engine = new GameEngine(enabledItems);
     engineRef.current = engine;
     engine.spawnPlayer(playerName);
@@ -72,6 +80,35 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
       const player = engineRef.current?.state.player;
       if (player) {
         onScoreUpdate(Math.floor(player.score));
+        
+        // Calcular powerups ativos para a UI
+        if (onPowerupsUpdate) {
+          const activePowers: ActivePowerup[] = [];
+          const now = performance.now();
+          
+          const checkPower = (type: SpecialItemType, endTime: number) => {
+            if (endTime > now) {
+              const conf = SPECIAL_ITEMS_CONFIG[type];
+              activePowers.push({
+                type,
+                timeLeft: Math.ceil((endTime - now) / 1000),
+                label: type === 'USURPER' ? 'USURPER' : (type === 'STALKER' ? 'STALKER' : (type === 'ANGEL' ? 'ANGEL' : type)),
+                icon: conf.label,
+                color: conf.color
+              });
+            }
+          };
+
+          checkPower('ANGEL', player.invincibilityEndTime);
+          checkPower('SPEED', player.speedBoostEndTime);
+          checkPower('MAGNET', player.magnetEndTime);
+          checkPower('SCOUTER', player.scouterEndTime);
+          checkPower('SLICER', player.slicerEndTime);
+          checkPower('USURPER', player.usurperEndTime);
+          checkPower('STALKER', player.stalkerEndTime);
+
+          onPowerupsUpdate(activePowers);
+        }
       }
 
       if (engineRef.current) {
@@ -272,6 +309,18 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
 
         ctx.lineJoin = 'round'; ctx.lineCap = 'round';
         const bodyWidth = 20 + Math.min(100, snake.length * 0.1);
+        
+        // --- DESENHO DO CORPO COM CONTORNO ---
+        ctx.beginPath();
+        snake.segments.forEach((seg, i) => { if (i === 0) ctx.moveTo(seg.x, seg.y); else ctx.lineTo(seg.x, seg.y); });
+        
+        // 1. Contorno Preto
+        ctx.lineWidth = bodyWidth + 5;
+        ctx.strokeStyle = '#000000';
+        ctx.shadowBlur = 0;
+        ctx.stroke();
+
+        // 2. Preenchimento Neon (Body)
         ctx.lineWidth = bodyWidth;
         if (isInvincible) { ctx.shadowBlur = 35; ctx.shadowColor = '#60a5fa'; } 
         else if (isUsurper) { ctx.shadowBlur = 35; ctx.shadowColor = '#22d3ee'; }
@@ -279,14 +328,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
         else if (isSlicer) { ctx.shadowBlur = 30; ctx.shadowColor = '#94a3b8'; }
         else { ctx.shadowBlur = 15; ctx.shadowColor = snake.color; }
         
-        ctx.beginPath();
-        snake.segments.forEach((seg, i) => { if (i === 0) ctx.moveTo(seg.x, seg.y); else ctx.lineTo(seg.x, seg.y); });
         const gradient = ctx.createLinearGradient(snake.segments[0].x, snake.segments[0].y, snake.segments[snake.segments.length-1].x, snake.segments[snake.segments.length-1].y);
         let startColor = snake.color;
         if (isStalker) startColor = '#111'; else if (isUsurper) startColor = '#eee';
         gradient.addColorStop(0, startColor); gradient.addColorStop(1, '#000000');
-        ctx.strokeStyle = gradient; ctx.stroke();
-        ctx.fillStyle = startColor; ctx.beginPath(); ctx.arc(head.x, head.y, bodyWidth / 2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = gradient; 
+        ctx.stroke();
+
+        // --- DESENHO DA CABEÇA COM CONTORNO ---
+        // 1. Contorno da cabeça
+        ctx.fillStyle = '#000000';
+        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.arc(head.x, head.y, (bodyWidth + 5) / 2, 0, Math.PI * 2); ctx.fill();
+        
+        // 2. Centro da cabeça
+        ctx.fillStyle = startColor;
+        ctx.beginPath(); ctx.arc(head.x, head.y, bodyWidth / 2, 0, Math.PI * 2); ctx.fill();
+
         if (isUsurper) renderMaskIcon(ctx, head.x, head.y, '#22d3ee', time, true);
         else if (isStalker) renderEyeIcon(ctx, head.x, head.y, '#f87171', time, true);
 
@@ -339,7 +397,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
       window.removeEventListener('keyup', handleKeyUp);
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [resize, playerName, onScoreUpdate, onLeaderboardUpdate, onGameOver, isPaused, enabledItems]);
+  }, [resize, playerName, onScoreUpdate, onLeaderboardUpdate, onPowerupsUpdate, onGameOver, isPaused, enabledItems]);
 
   const handleInput = (clientX: number, clientY: number) => {
     if (isPaused) return;
