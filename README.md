@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="1200" height="475" alt="Neon Slither Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img width="1200" height="475" alt="Neon Slither Banner" src="https://github.com/ocnrsilva/Imagens/blob/fc4e5ee657f128c884e0e64e4b0160eef5ece164/Banner.png" />
 </div>
 
 <h1 align="center">🐍 Neon Slither</h1>
