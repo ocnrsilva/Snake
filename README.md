@@ -60,6 +60,13 @@ O jogo foi desenvolvido em modo **singleplayer contra bots**, proporcionando uma
 >👁️ STALKER (STALKER): Ativa um modo predador por 25 segundos. Uma mira laser aponta para o jogador mais rico do mapa. Ao colidir com ele, você o elimina e rouba todos os atributos e pontos dele.
 >
 
+![Menu do Jogo](https://github.com/ocnrsilva/Imagens/blob/63d0544c1a057b9b85fe3cae152c66b9dac5777d/Menu%20SIO.png)
+
+### 🕹️ Gameplay
+![Gameplay](https://github.com/ocnrsilva/Imagens/blob/63d0544c1a057b9b85fe3cae152c66b9dac5777d/Jogo%20SIO.png)
+
+---
+
 ## ***************** UPGRADES FUTUROS *****************
 ### Adição de novos Itens especiais
 🧛‍ VAMPIRO (VAMPIRE): Ativa um modo vampiro por 10 segundos. Uma mira laser aponta para o jogador mais proximo do mapa. E suga 5% do seu corpo e ponto da vitima por segundo,em incorpora a si mesmo  
@@ -87,13 +94,6 @@ A seleção de itens especiais feita no menu será respeitada ao iniciar qualque
 ### Visual (GameCanvas.tsx):
 Exibição do ID do servidor no HUD para confirmação do jogador.
 
-
-![Menu do Jogo](https://github.com/ocnrsilva/Imagens/blob/63d0544c1a057b9b85fe3cae152c66b9dac5777d/Menu%20SIO.png)
-
-### 🕹️ Gameplay
-![Gameplay](https://github.com/ocnrsilva/Imagens/blob/63d0544c1a057b9b85fe3cae152c66b9dac5777d/Jogo%20SIO.png)
-
----
 
 ## 🚀 Executando o Projeto Localmente
 
