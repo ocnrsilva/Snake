@@ -60,6 +60,34 @@ O jogo foi desenvolvido em modo **singleplayer contra bots**, proporcionando uma
 >👁️ STALKER (STALKER): Ativa um modo predador por 25 segundos. Uma mira laser aponta para o jogador mais rico do mapa. Ao colidir com ele, você o elimina e rouba todos os atributos e pontos dele.
 >
 
+## ***************** UPGRADES FUTUROS *****************
+### Adição de novos Itens especiais
+🧛‍ VAMPIRO (VAMPIRE): Ativa um modo vampiro por 10 segundos. Uma mira laser aponta para o jogador mais proximo do mapa. E suga 5% do seu corpo e ponto da vitima por segundo,em incorpora a si mesmo  
+🐦‍ FENIX (FENIX): Ativa um modo fenix por 40 segundos. Se voce morrer enquanto estiver sobre o efeito, irá renascer em outro ponto do mapa com toda a sua pontuação e tamanho.
+
+## Adição do modo jogo Multiplayer
+### Especificação Técnica das Mudanças
+### Motor de Jogo (GameEngine.ts):
+#### Estabilização do Ângulo: 
+Refatoração do cálculo de angleDiff para garantir que a cobra sempre tome o caminho mais curto para o alvo, eliminando o giro infinito.
+#### Regra de 50 Entidades: 
+A função maintainEntities agora garante que existam sempre 50 cobras no mapa. A lógica será: 50 - (Jogadores Reais) = Quantidade de Bots.
+#### Modo Multiplayer: 
+O motor aceitará um serverId opcional para contextalizar a partida.
+### Gerenciador de Servidores (MultiplayerManager.ts):
+Um novo serviço para simular a lista de servidores abertos.
+Lógica para "lotar" servidores (máximo 50 players) e abrir novos automaticamente.
+### Interface de Usuário (App.tsx e CSS):
+#### Menu Dual: 
+Botões para "Modo Alone" e "Multiplayer".
+#### Server Browser: 
+Uma lista visual mostrando os IDs dos servidores e a ocupação atual (ex: 12/50 Players + 38 Bots).
+#### Configuração de Itens: 
+A seleção de itens especiais feita no menu será respeitada ao iniciar qualquer servidor.
+### Visual (GameCanvas.tsx):
+Exibição do ID do servidor no HUD para confirmação do jogador.
+
+
 ![Menu do Jogo](https://github.com/ocnrsilva/Imagens/blob/63d0544c1a057b9b85fe3cae152c66b9dac5777d/Menu%20SIO.png)
 
 ### 🕹️ Gameplay
