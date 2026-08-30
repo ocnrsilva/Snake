@@ -1,0 +1,9 @@
+services:
+  neon-slither:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neon_slither_game
+    ports:
+      - "3001:80"
+    restart: unless-stopped

@@ -34,10 +34,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
   const requestRef = useRef<number | undefined>(undefined);
   const keysPressed = useRef<{ [key: string]: boolean }>({});
 
+  const isPausedRef = useRef(isPaused);
+  isPausedRef.current = isPaused;
+
+  const callbacksRef = useRef({ onScoreUpdate, onLeaderboardUpdate, onPowerupsUpdate, onGameOver });
+  callbacksRef.current = { onScoreUpdate, onLeaderboardUpdate, onPowerupsUpdate, onGameOver };
+
   const resize = useCallback(() => {
     if (canvasRef.current) {
-      canvasRef.current.width = window.innerWidth;
-      canvasRef.current.height = window.innerHeight;
+      canvasRef.current.width = window.innerWidth || document.documentElement.clientWidth || 800;
+      canvasRef.current.height = window.innerHeight || document.documentElement.clientHeight || 600;
     }
   }, []);
 
@@ -70,7 +76,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
     engine.spawnPlayer(playerName);
 
     const animate = (time: number) => {
-      if (!isPaused && engineRef.current) {
+      if (!isPausedRef.current && engineRef.current) {
         updateKeyboardInput();
         engineRef.current.update(time);
       }
@@ -79,10 +85,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
       
       const player = engineRef.current?.state.player;
       if (player) {
-        onScoreUpdate(Math.floor(player.score));
+        callbacksRef.current.onScoreUpdate(Math.floor(player.score));
         
         // Calcular powerups ativos para a UI
-        if (onPowerupsUpdate) {
+        if (callbacksRef.current.onPowerupsUpdate) {
           const activePowers: ActivePowerup[] = [];
           const now = performance.now();
           
@@ -107,7 +113,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
           checkPower('USURPER', player.usurperEndTime);
           checkPower('STALKER', player.stalkerEndTime);
 
-          onPowerupsUpdate(activePowers);
+          callbacksRef.current.onPowerupsUpdate(activePowers);
         }
       }
 
@@ -116,10 +122,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
           .sort((a, b) => b.score - a.score)
           .slice(0, 5)
           .map(s => ({ name: s.name, score: Math.floor(s.score), isPlayer: s.isPlayer }));
-        onLeaderboardUpdate(leaders);
+        callbacksRef.current.onLeaderboardUpdate(leaders);
         
         if (engineRef.current.state.isGameOver) {
-          onGameOver();
+          callbacksRef.current.onGameOver();
         } else {
           requestRef.current = requestAnimationFrame(animate);
         }
@@ -170,7 +176,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
       ctx.fill();
       if (!isOverlay) { ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke(); }
       ctx.fillStyle = '#1e293b';
-      ctx.beginPath(); ctx.roundRect(-12, -4, 24, 7, 4); ctx.fill();
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(-12, -4, 24, 7, 4);
+      } else {
+        ctx.rect(-12, -4, 24, 7);
+      }
+      ctx.fill();
       ctx.fillStyle = color;
       ctx.beginPath(); ctx.arc(-6, -0.5, 2, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(6, -0.5, 2, 0, Math.PI * 2); ctx.fill();
@@ -196,16 +208,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
     };
 
     const render = (time: number) => {
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (!canvas || !ctx || !engineRef.current) return;
+      try {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (!canvas || !ctx || !engineRef.current) return;
 
-      const player = engineRef.current.state.player;
-      const worldSize = engineRef.current.state.worldSize;
+        const player = engineRef.current.state.player;
+        const worldSize = engineRef.current.state.worldSize;
 
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       if (player) {
         const head = player.segments[0];
@@ -388,6 +401,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
         const sy = mmY + (snake.segments[0].y / worldSize) * mmSize;
         ctx.fillStyle = snake.isPlayer ? 'white' : snake.color; ctx.beginPath(); ctx.arc(sx, sy, snake.isPlayer ? 4 : 2, 0, Math.PI * 2); ctx.fill();
       });
+      } catch (err) {
+        console.error('Canvas render error:', err);
+      }
     };
 
     requestRef.current = requestAnimationFrame(animate);
@@ -397,7 +413,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
       window.removeEventListener('keyup', handleKeyUp);
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [resize, playerName, onScoreUpdate, onLeaderboardUpdate, onPowerupsUpdate, onGameOver, isPaused, enabledItems]);
+  }, [resize, playerName, enabledItems]);
 
   const handleInput = (clientX: number, clientY: number) => {
     if (isPaused) return;
@@ -416,7 +432,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onScoreUpdate, onLeaderboardUpd
   return (
     <canvas
       ref={canvasRef}
-      className="block cursor-crosshair touch-none"
+      className="w-full h-full block cursor-crosshair touch-none"
       onMouseMove={handleMouseMove}
       onTouchMove={handleTouchMove}
       onMouseDown={handleMouseDown}

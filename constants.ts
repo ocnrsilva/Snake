@@ -24,7 +24,7 @@ export const SPECIAL_ITEMS_CONFIG = {
   SIZE: {
     max: 15,
     respawnMs: 2 * 60 * 1000,
-    label: '+',
+    label: '🟢',
     color: '#10b981'
   },
   SPEED: {

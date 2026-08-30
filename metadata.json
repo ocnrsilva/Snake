@@ -1,6 +1,7 @@
 {
-  "name": "Neon Slither PWA",
+  "name": "Neon Slither",
   "version": "1.6",
   "description": "High-performance slither game with Tactical AI, Item Stacking, and Interactive Item Details UI.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }
